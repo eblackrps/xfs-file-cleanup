@@ -4,6 +4,16 @@ This **Linux / Python 3** utility inventories and, when requested, removes **com
 
 The utility **does not** adjust GFS retention, modify backup metadata, change immutable flags, remove Veeam `.veeam.N.lock` tracking files, or remove directories. It is a filesystem cleanup utility, **not** a Veeam-supported retention operation. Veeam recommends managing registered backups through its supported Delete from Disk/retention functions.
 
+## Latest release
+
+**[v0.5.0 - GitHub Releases](https://github.com/eblackrps/xfs-file-cleanup/releases/tag/v0.5.0)**
+
+- [Download v0.5.0 customer ZIP](https://github.com/eblackrps/xfs-file-cleanup/releases/download/v0.5.0/veeam_xfs_cleanup_v0.5.0_client_with_guide.zip) - Python script, operator guide, documentation and internal checksums
+- [Download v0.5.0 operator PDF](https://github.com/eblackrps/xfs-file-cleanup/releases/download/v0.5.0/Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf)
+- [SHA-256 release checksums](https://github.com/eblackrps/xfs-file-cleanup/releases/download/v0.5.0/veeam_xfs_cleanup_v0.5.0_SHA256SUMS.txt)
+
+The release archive is built reproducibly from the tagged repository source. Run a dry scan and read the flagged-file report before considering deletion. A public release does **not** certify native Veeam v13 metadata or XFS production purge behavior.
+
 ## Operator documentation
 
 - [v0.5.0 Operator Guide (PDF)](docs/Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf) - complete operating instructions for v12/v13.
