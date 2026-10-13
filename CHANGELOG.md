@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 - Dual-version development candidate (2026-10-13)
+
+- Preserve the v0.4.3 Linux/XFS purge safeguards, interactive menu, unattended mode, reports, audit journal, and 28-day default.
+- Support recognized v12 legacy VM-ID filenames alongside newer D-separated per-machine backup files, including short VM IDs and GUID-form identities used by Veeam backups.
+- Normalize machine IDs across legacy and modern names so an upgraded repository does not split a full and dependent incremental into unrelated chains.
+- Recognize per-machine VBM filenames and fail closed on unrecognized Storage XML elements or unsupported references.
+- Add mixed-version, upgraded-chain, VBM, GUID, malformed-format, CLI dry scan, and synthetic purge regressions.
+- Confirm that Software/Infrastructure Appliance deployments are outside the supported automated-root-purge scope.
+- Native Veeam v13 metadata and mounted hardened-XFS production deletion are not yet independently proven; these remain validation limits, not claims of certification.
+
 ## 0.4.3 — Final customer release (2026-10-13)
 
 - Promoted the v0.4.3-rc1 candidate following release-owner-reported manual testing and the completed offline validation.

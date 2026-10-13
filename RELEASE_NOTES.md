@@ -1,19 +1,13 @@
-# Veeam XFS Backup-Copy Cleanup 0.4.3 — Release Notes
+# Veeam XFS Backup-Copy Cleanup v0.5.0 - Development Candidate
 
-**Status:** Final customer delivery, October 13, 2026.
+**Scope:** one Linux / Python 3 cleanup utility for known Veeam Backup & Replication v12 and v13 backup-copy filesystem layouts on manually configured XFS hardened repositories.
 
-**Supported scope:** Local Linux x86_64, Python 3.8+, mounted XFS, Veeam v12 backup-copy repository. Does not connect to VBR, change immutability, or rewrite VBM files. Not an official Veeam product or supported replacement for VBR retention.
+**Preserved operation:** menu-driven dry run, interactive scan and purge, unattended `--purge`, 28-day default, immutable-file protection, VBM guardrails, repository change detection, audit logging, and flagged-not-removed reports.
 
-**Operator modes:**
+**New compatibility:** accepts legacy direct-date VM names and modern D-separated short-ID/GUID machine names; recognizes additional per-machine VBM filenames; reconciles machine identities across v12/v13 naming so a new incremental cannot strand its prior full. Unexpected metadata schema elements fail closed.
 
-- Menu: `sudo python3 veeam_xfs_cleanup.py` (dry scan or confirmed scan and purge)
-- Preview: `python3 veeam_xfs_cleanup.py --repo '/mnt/YOUR_VOLUME/backups' --days 28 --dry-run`
-- Unattended: `sudo python3 veeam_xfs_cleanup.py --repo '/mnt/YOUR_VOLUME/backups' --days 28 --report-dir /var/log/veeam-xfs-cleanup --purge`
+**Release boundary:** tests use artificial backup files and representative XML layouts, not vendor-supplied real v13 VBM data. The previous customer's manual v12 test applies to v0.4.3 only. This version must not be described as production-certified for new v13 environments without platform and metadata acceptance evidence. Veeam software/infrastructure appliance root-level installs are not supported.
 
-**Protection and reporting:** Removes only fully expired eligible backup-copy chains; protects dependencies, ambiguous metadata, active/open files, and immutable files. A clean scan is performed before each purge. Reports include per-file and per-chain findings and `flagged_not_removed_*.csv`; purge operations are written to a durable journal. A blocked or uncertain expired chain can remain on disk by design.
+**Destructive-use rule:** ensure no backup-copy jobs can run during the entire purge. Veeam immutable flags are never cleared; uncertain chains stay on disk and are reported.
 
-**Required operations:** All backup-copy jobs must be stopped or guaranteed idle for the full purge window. Review nonzero exit codes, journals, and flagged-not-removed reports. Run only against the correct backup-copy-only repository path.
-
-**Release verification:** 102/102 permanent offline regression tests plus adversarial/synthetic workflows passed on the release code path. The requestor reported manual testing completed and authorized finalization. Exact manual test procedure and platform logs were not provided for independent reproduction; do not interpret this note as third-party certification of all real Veeam/XFS cases.
-
-**Changes from v0.4.3-rc1:** CLI version display and release documentation only; deletion logic is unchanged.
+**Source and history:** https://github.com/eblackrps/xfs-file-cleanup
