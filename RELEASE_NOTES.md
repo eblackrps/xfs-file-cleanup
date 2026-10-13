@@ -12,13 +12,17 @@
 
 **Source and history:** https://github.com/eblackrps/xfs-file-cleanup
 
+**Operator documentation:** [v0.5.0 PDF guide](docs/Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf) and [Markdown guide](docs/OPERATOR_GUIDE.md). They cover v12/v13 backup names, VBM dependency safeguards, nested/bind mount detection, installation, reports, exit codes, scheduling, and safe recovery after interrupted purge.
+
+**Documentation revision:** October 13, 2026. No functional changes were made to the published `veeam_xfs_cleanup.py` code.
+
 ## v0.5.0-rc2 independent debug additions
 
 - Recognizes Veeam's documented machine-name-only `WorkloadD...` VBK/VIB filenames without losing protection for later increments.
 - Rejects unknown XML references in alternative metadata storage layouts while preserving known Storage/FilePath fields.
 - Refuses nested same-filesystem bind mounts; the Linux `/proc/self/mountinfo` requirement is documented.
 - The deletion engine, menu, unattended `--purge`, immutable-bit handling, and reporting remain the same.
-- This remains a candidate: no authenticated Veeam v13 metadata or mounted XFS integration proof is available.
+- At the rc2 stage, authentic Veeam v13 metadata and mounted XFS integration proof were unavailable; that limitation also applies to the final v0.5.0 publication.
 
 ## v0.5.0-rc3 final-debug changes
 

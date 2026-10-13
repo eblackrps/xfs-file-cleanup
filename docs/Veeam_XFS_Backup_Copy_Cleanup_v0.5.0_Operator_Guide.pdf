@@ -1,0 +1,283 @@
+%PDF-1.4
+%ASCII
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R ] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /Name /F1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /Name /F2 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /Name /F3 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Title (Veeam XFS Backup-Copy Cleanup v0.5.0 Operator Guide) /Author (Technical Operations) /Subject (Veeam v12 and v13 Linux XFS backup-copy cleanup) >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 5204 >>
+stream
+0.07 0.41 0.47 rg 52 755 30 2.4 re f
+0.38 0.45 0.52 rg BT /F2 7.4 Tf 1 0 0 1 91.0 754.0 Tm (XFS BACKUP-COPY CLEANUP   /   OPERATOR GUIDE) Tj ET
+0.07 0.39 0.47 rg BT /F2 7.4 Tf 1 0 0 1 515.0 754.0 Tm (v0.5.0) Tj ET
+0.12 0.22 0.31 rg BT /F2 18 Tf 1 0 0 1 52.0 714.0 Tm (Veeam XFS Backup-Copy Cleanup v0.5.0 - Operator) Tj ET
+0.12 0.22 0.31 rg BT /F2 18 Tf 1 0 0 1 52.0 691.0 Tm (Guide) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 655.0 Tm (Applies to Veeam Backup & Replication v12 and v13 backup-copy files on manually administered) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 642.0 Tm (Linux x86_64 hardened repositories using XFS. Published October 13, 2026. This is an) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 629.0 Tm (independently developed filesystem utility, not a Veeam-supported retention operation.) Tj ET
+0.12 0.22 0.31 rg BT /F2 9.1 Tf 1 0 0 1 52.0 609.0 Tm (IMPORTANT: WARNING: Destructive cleanup permanently unlinks eligible files.) Tj ET
+0.12 0.22 0.31 rg BT /F2 9.1 Tf 1 0 0 1 52.0 595.0 Tm (Stop backup-copy jobs or guarantee that none can start until the scan,) Tj ET
+0.12 0.22 0.31 rg BT /F2 9.1 Tf 1 0 0 1 52.0 581.0 Tm (purge, and logging finish. The script does not lock out the Veeam Data) Tj ET
+0.12 0.22 0.31 rg BT /F2 9.1 Tf 1 0 0 1 52.0 567.0 Tm (Mover.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 534.0 Tm (1. Scope and prerequisites) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 506.0 Tm (Requirement / Verify before use) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 494.0 Tm (Supported platform / Linux x86_64, Python 3.8 or newer, mounted XFS backup-copy repository) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 482.0 Tm (Utilities / findmnt \(util-linux\), fuser \(psmisc\), readable /proc/self/mountinfo) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 470.0 Tm (Permissions / Root for --scan-purge or --purge; read access for a dry run) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 458.0 Tm (Locking / Trusted /run/lock and one active cleanup instance per repository) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 446.0 Tm (Reports / Private, operator-owned directory mode 0700 outside the repository; report files) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 434.0 Tm (mode 0600) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 422.0 Tm (Excluded / Veeam Software/Infrastructure Appliance root-level deployment; unrelated backup) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 410.0 Tm (types) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 391.0 Tm (Use the backup-copy repository root directly above its job directories, not a VM folder or a) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 378.0 Tm (higher-level volume containing unrelated backups. Do not point the tool at / or a path with) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 365.0 Tm (symlink components or nested mounts.) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 341.0 Tm (python3 --version) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 330.0 Tm (command -v findmnt) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 319.0 Tm (command -v fuser) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 308.0 Tm (test -r /proc/self/mountinfo) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 297.0 Tm (findmnt -n -o TARGET,FSTYPE --target '/mnt/YOUR_VOLUME/backups') Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 267.0 Tm (2. Installation and package verification) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 239.0 Tm (Use the matching v0.5.0 customer package, not the earlier v0.4.3 ZIP. The refreshed package) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 226.0 Tm (is named veeam_xfs_cleanup_v0.5.0_client_with_guide.zip and contains) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 213.0 Tm (veeam_xfs_cleanup_v0.5.0/ with the script, documentation and SHA256SUMS.txt.) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 189.0 Tm (unzip veeam_xfs_cleanup_v0.5.0_client_with_guide.zip) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 178.0 Tm (cd veeam_xfs_cleanup_v0.5.0) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 167.0 Tm (sha256sum -c SHA256SUMS.txt) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 156.0 Tm (sudo install -d -m 0700 /opt/veeam-xfs-cleanup) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 145.0 Tm (sudo install -m 0644 veeam_xfs_cleanup.py /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 134.0 Tm (sudo install -d -m 0700 /var/log/veeam-xfs-cleanup) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 123.0 Tm (python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py --version) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 101.0 Tm (If installing from a Git clone instead, copy veeam_xfs_cleanup.py from this repository to) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 88.0 Tm (/opt/veeam-xfs-cleanup/. Do not rely on the customer ZIP filename when installing from) Tj ET
+0.84 0.88 0.90 RG 0.6 w 52 47 m 560 47 l S
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 52.0 34.0 Tm (Veeam v12/v13  |  Customer operations) Tj ET
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 523.0 34.0 Tm (1 / 5) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 5233 >>
+stream
+0.07 0.41 0.47 rg 52 755 30 2.4 re f
+0.38 0.45 0.52 rg BT /F2 7.4 Tf 1 0 0 1 91.0 754.0 Tm (XFS BACKUP-COPY CLEANUP   /   OPERATOR GUIDE) Tj ET
+0.07 0.39 0.47 rg BT /F2 7.4 Tf 1 0 0 1 515.0 754.0 Tm (v0.5.0) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 720.0 Tm (GitHub. The --version output must be veeam-xfs-cleanup 0.5.0.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 692.0 Tm (3. Run modes) Tj ET
+0.12 0.22 0.31 rg BT /F2 10.5 Tf 1 0 0 1 52.0 660.0 Tm (Interactive menu) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 641.0 Tm (sudo python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 626.0 Tm (Choose 1 for a dry scan, 2 for a fresh scan followed by purge confirmation, or 3 to exit.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 613.0 Tm (Supply the repository root when prompted. Option 2 deletes only after the operator types the) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 600.0 Tm (exact word PURGE.) Tj ET
+0.12 0.22 0.31 rg BT /F2 10.5 Tf 1 0 0 1 52.0 576.0 Tm (Read-only dry scan) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 557.0 Tm (python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 546.0 Tm (--repo '/mnt/YOUR_VOLUME/backups' --days 28 \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 535.0 Tm (--report-dir '/var/log/veeam-xfs-cleanup' --dry-run) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 520.0 Tm (A dry scan inventories files and writes reports. It does not delete files. Supply an) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 507.0 Tm (operator-writable private report directory when you do not run as root.) Tj ET
+0.12 0.22 0.31 rg BT /F2 10.5 Tf 1 0 0 1 52.0 483.0 Tm (Confirmed scan and purge) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 464.0 Tm (sudo python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 453.0 Tm (--repo '/mnt/YOUR_VOLUME/backups' --days 28 \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 442.0 Tm (--report-dir '/var/log/veeam-xfs-cleanup' --scan-purge) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 427.0 Tm (Read the fresh groups_*.csv and manifest_*.json reports before typing PURGE. Any other answer) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 414.0 Tm (cancels deletion. This mode requires an interactive terminal.) Tj ET
+0.12 0.22 0.31 rg BT /F2 10.5 Tf 1 0 0 1 52.0 390.0 Tm (Unattended purge - no confirmation prompt) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 371.0 Tm (sudo python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 360.0 Tm (--repo '/mnt/YOUR_VOLUME/backups' --days 28 \\) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 349.0 Tm (--report-dir '/var/log/veeam-xfs-cleanup' --purge) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 334.0 Tm (Each destructive run performs a new inventory and eligibility check. It does not replay a) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 321.0 Tm (previous CSV or manifest. Root and XFS are required.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 301.0 Tm (Use --help for current switches. --days accepts 1 through 36500; the default is 28 elapsed) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 288.0 Tm (days. The legacy --execute mode requires --confirm DELETE-EXPIRED-VEEAM-BACKUPS; prefer) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 275.0 Tm (--scan-purge or --purge for new procedures.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 247.0 Tm (4. Veeam v12 and v13 compatibility) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 219.0 Tm (The same program handles the two generations without a version flag. Existing v12 backup) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 206.0 Tm (files can remain after upgrading the backup server to v13.) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 186.0 Tm (Example filename / Interpreted format) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 174.0 Tm (Example.vm-ABCD12342026-10-01T120000_ABCD.vbk / Legacy machine ID and direct timestamp) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 162.0 Tm (Example.vm-ABCD1234D2026-10-01T120000_ABCD.vib / Modern D-separated machine ID) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 150.0 Tm (ExampleD2026-10-01T120000.vbk / Documented name-only workload and timestamp) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 138.0 Tm (Example.vm-ABCD1234.vbm / Per-machine VBM metadata example) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 119.0 Tm (Recognized GUID-style identities and v12/v13 ID variants are normalized where the parser can) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 106.0 Tm (prove their relationship. A newer incremental can therefore protect an older full, including) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 93.0 Tm (after an upgrade. Unknown names, malformed IDs, unexpected extensions, and unfamiliar VBM XML) Tj ET
+0.84 0.88 0.90 RG 0.6 w 52 47 m 560 47 l S
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 52.0 34.0 Tm (Veeam v12/v13  |  Customer operations) Tj ET
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 523.0 34.0 Tm (2 / 5) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 5807 >>
+stream
+0.07 0.41 0.47 rg 52 755 30 2.4 re f
+0.38 0.45 0.52 rg BT /F2 7.4 Tf 1 0 0 1 91.0 754.0 Tm (XFS BACKUP-COPY CLEANUP   /   OPERATOR GUIDE) Tj ET
+0.07 0.39 0.47 rg BT /F2 7.4 Tf 1 0 0 1 515.0 754.0 Tm (v0.5.0) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 720.0 Tm (path references are held for review instead of deleted.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 700.0 Tm (These patterns are not a promise to parse every Veeam workload. Reverse-incremental chains,) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 687.0 Tm (unsupported metadata layouts, unresolved cross-directory references, and unreadable metadata) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 674.0 Tm (are not automatically removed.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 646.0 Tm (5. Retention and safe deletion decisions) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 618.0 Tm (The default threshold is 28 x 24 hours from execution. A complete independent VBK/VIB chain) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 605.0 Tm (is considered only when every member has both an old recognized restore-point timestamp and) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 592.0 Tm (an old file modification timestamp. A newer full in the same folder may start a separate) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 579.0 Tm (chain. Any newer dependent incremental or retained VBM reference can protect the older full.) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 559.0 Tm (Decision / Meaning) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 547.0 Tm (PURGE_CANDIDATE / Eligible for another set of checks immediately before unlink) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 535.0 Tm (RETAIN / Required by a newer restore point or metadata dependency) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 523.0 Tm (IMMUTABLE / Protected by an immutable XFS file attribute) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 511.0 Tm (REVIEW / Ambiguous naming, shared or unreadable metadata, unsupported format, or other) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 499.0 Tm (unresolved safety issue) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 487.0 Tm (FAILED_OR_BLOCKED / A proposed deletion stopped or failed; inspect the journal) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 468.0 Tm (The tool never modifies VBMs, removes .veeam.N.lock immutability tracking files, clears) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 455.0 Tm (immutable attributes, updates GFS settings, changes VBR registration, or deletes directories.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 442.0 Tm (A .veeam.N.lock marker does not by itself prove that a Veeam job is running.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 422.0 Tm (Before deleting candidate groups, the utility checks file identities, backup-file handles) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 409.0 Tm (with fuser, metadata references, marker changes, and repository changes. It refuses nested or) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 396.0 Tm (bind mounts, symlinks, incomplete files, and overlapping cleanup runs. These checks reduce) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 383.0 Tm (risk but cannot prevent a Veeam writer from starting between checks.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 355.0 Tm (6. Reports and audit trail) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 327.0 Tm (Reports default to ~/veeam-xfs-cleanup-reports for the invoking account, typically) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 314.0 Tm (/root/veeam-xfs-cleanup-reports when sudo is used. Set --report-dir for unattended operation.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 301.0 Tm (Keep reports outside the repository.) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 281.0 Tm (Report pattern / Content) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 269.0 Tm (groups_*.csv / Chain-level decision, reason, counts, timestamps, and sizes) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 257.0 Tm (files_*.csv / File inventory and per-file decision) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 245.0 Tm (flagged_not_removed_*.csv / Older files left on disk, including dry-run candidates and) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 233.0 Tm (protected or failed items) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 221.0 Tm (manifest_*.json / Informational scan manifest, never a subsequent purge input) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 209.0 Tm (deletions_*.jsonl / Purge-only durable journal with DELETE_INTENT, DELETED and failure) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 197.0 Tm (records) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 178.0 Tm (After a destructive run, reconcile each DELETE_INTENT against DELETED and the actual files) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 165.0 Tm (remaining. An intent without completion may indicate interruption; it does not prove the file) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 152.0 Tm (survived. Logical bytes in the reports are not necessarily physically reclaimed blocks.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 124.0 Tm (7. Scheduling) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 96.0 Tm (Schedule unattended purge only inside a guaranteed backup-copy idle window. For root crontab,) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 83.0 Tm (edit with sudo crontab -e. The entry below must be a single physical line; the chosen time is) Tj ET
+0.84 0.88 0.90 RG 0.6 w 52 47 m 560 47 l S
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 52.0 34.0 Tm (Veeam v12/v13  |  Customer operations) Tj ET
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 523.0 34.0 Tm (3 / 5) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 5126 >>
+stream
+0.07 0.41 0.47 rg 52 755 30 2.4 re f
+0.38 0.45 0.52 rg BT /F2 7.4 Tf 1 0 0 1 91.0 754.0 Tm (XFS BACKUP-COPY CLEANUP   /   OPERATOR GUIDE) Tj ET
+0.07 0.39 0.47 rg BT /F2 7.4 Tf 1 0 0 1 515.0 754.0 Tm (v0.5.0) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 720.0 Tm (illustrative.) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 696.0 Tm (15 3 * * * /usr/bin/python3 /opt/veeam-xfs-cleanup/veeam_xfs_cleanup.py --repo '/mnt/YOUR) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 685.0 Tm (_VOLUME/backups' --days 28 --report-dir /var/log/veeam-xfs-cleanup --purge >> /var/log/ve) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 674.0 Tm (eam-xfs-cleanup/cron.log 2>&1) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 652.0 Tm (Monitor exit codes and retain the generated reports. A full-repository identity check happens) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 639.0 Tm (before each eligible chain; large repositories can extend execution. Choose an idle window) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 626.0 Tm (long enough for both scan and purge.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 598.0 Tm (8. Exit codes) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 570.0 Tm (Code / Interpretation) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 558.0 Tm (0 / Dry scan succeeded, or purge completed without flagged old files or failures) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 546.0 Tm (2 / Refused before deletion: configuration, activity, non-XFS, unsafe path or lock) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 534.0 Tm (3 / Purge interrupted or failed; partial deletion may already have happened) Tj ET
+0.16 0.20 0.25 rg BT /F1 8.5 Tf 1 0 0 1 57.0 522.0 Tm (4 / Purge completed but protected or otherwise flagged old files remain) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 503.0 Tm (An exit code of 0 from a dry scan does not mean that no purge candidates were found. Check) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 490.0 Tm (the reports.) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 462.0 Tm (9. Troubleshooting and recovery) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 434.0 Tm (- Missing findmnt or fuser: install the relevant Linux package, then retry in the approved) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 421.0 Tm (window.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 408.0 Tm (- Non-XFS or nested mount refusal: verify the mount and repository scope. Do not bypass the) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 395.0 Tm (check.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 382.0 Tm (- Unreadable /proc/self/mountinfo: restore mount-info access before attempting purge.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 369.0 Tm (- Files busy or repository changing: stop backup-copy jobs and wait for activity to cease.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 356.0 Tm (- IMMUTABLE: allow the protection period to expire through the established backup policy;) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 343.0 Tm (never force-clear flags.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 330.0 Tm (- REVIEW: inspect the reason, machine-ID naming and VBM relationships; do not unlink) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 317.0 Tm (individual VBK/VIB files.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 304.0 Tm (- Exit 3 or unfinished DELETE_INTENT: disable scheduling, preserve all reports and reconcile) Tj ET
+0.16 0.20 0.25 rg BT /F1 9 Tf 1 0 0 1 60.0 291.0 Tm (on-disk state before rerunning.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 271.0 Tm (To review recent console logs:) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 254.0 Tm (sudo ls -lt /var/log/veeam-xfs-cleanup) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 243.0 Tm (sudo tail -n 50 /var/log/veeam-xfs-cleanup/cron.log) Tj ET
+0.16 0.20 0.25 rg BT /F3 7.8 Tf 1 0 0 1 56.0 232.0 Tm (df -h '/mnt/YOUR_VOLUME/backups') Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 202.0 Tm (10. Operator checklist) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 174.0 Tm (Before purge: verify backup-copy-only XFS root, Python/root privileges, findmnt/fuser,) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 161.0 Tm (private report directory, and a guaranteed idle window. Confirm the 28-day cutoff. Review the) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 148.0 Tm (candidate reports before any interactive confirmation.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 128.0 Tm (After purge: retain groups, files, flagged, manifest, and deletion journal outputs.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 115.0 Tm (Investigate nonzero exit codes and any unfinished intent records. Compare free space) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 102.0 Tm (separately. Confirm the next scheduled run will not overlap Veeam jobs.) Tj ET
+0.84 0.88 0.90 RG 0.6 w 52 47 m 560 47 l S
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 52.0 34.0 Tm (Veeam v12/v13  |  Customer operations) Tj ET
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 523.0 34.0 Tm (4 / 5) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 16 0 R >>
+endobj
+16 0 obj
+<< /Length 1779 >>
+stream
+0.07 0.41 0.47 rg 52 755 30 2.4 re f
+0.38 0.45 0.52 rg BT /F2 7.4 Tf 1 0 0 1 91.0 754.0 Tm (XFS BACKUP-COPY CLEANUP   /   OPERATOR GUIDE) Tj ET
+0.07 0.39 0.47 rg BT /F2 7.4 Tf 1 0 0 1 515.0 754.0 Tm (v0.5.0) Tj ET
+0.07 0.39 0.47 rg BT /F2 13 Tf 1 0 0 1 52.0 712.0 Tm (11. Release and validation limits) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 684.0 Tm (v0.5.0 was approved for public GitHub source publication on October 13, 2026. The independent) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 671.0 Tm (offline review included 146 regression cases and separate rubber-duck and debug passes on the) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 658.0 Tm (same frozen cleanup code. This is evidence about synthetic fixtures and Linux test behavior,) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 645.0 Tm (not Veeam vendor certification.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 625.0 Tm (The release owner's previous manual v12 acceptance was for v0.4.3. Authentic v13 VBM samples) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 612.0 Tm (and a native destructive test on mounted hardened XFS were not independently verified. Do not) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 599.0 Tm (treat the GitHub release as authorization for unattended v13 production purge without) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 586.0 Tm (environment-specific acceptance and a guaranteed idle window.) Tj ET
+0.16 0.20 0.25 rg BT /F1 9.2 Tf 1 0 0 1 52.0 566.0 Tm (Source: https://github.com/eblackrps/xfs-file-cleanup) Tj ET
+0.84 0.88 0.90 RG 0.6 w 52 47 m 560 47 l S
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 52.0 34.0 Tm (Veeam v12/v13  |  Customer operations) Tj ET
+0.38 0.45 0.52 rg BT /F1 7.5 Tf 1 0 0 1 523.0 34.0 Tm (5 / 5) Tj ET
+endstream
+endobj
+xref
+0 17
+0000000000 65535 f 
+0000000016 00000 n 
+0000000065 00000 n 
+0000000151 00000 n 
+0000000258 00000 n 
+0000000370 00000 n 
+0000000475 00000 n 
+0000000647 00000 n 
+0000000793 00000 n 
+0000006048 00000 n 
+0000006195 00000 n 
+0000011480 00000 n 
+0000011628 00000 n 
+0000017487 00000 n 
+0000017635 00000 n 
+0000022813 00000 n 
+0000022961 00000 n 
+trailer
+<< /Size 17 /Root 1 0 R /Info 6 0 R >>
+startxref
+24792
+%%EOF
