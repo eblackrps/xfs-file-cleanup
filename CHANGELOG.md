@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - Operator documentation publication (2026-10-13)
+
+- Publish the complete v12/v13 operator guide as PDF and Markdown in `docs/`.
+- Replace obsolete v0.4.3 installation, naming, and report directions with v0.5.0 instructions.
+- Link the guide from README and release notes, preserving the unverified native-v13/XFS production boundary.
+- Documentation-only change: `veeam_xfs_cleanup.py` remains identical to the reviewed and merged v0.5.0 source.
+
 ## 0.5.0 - GitHub source release (2026-10-13)
 
 - Release owner manually reviewed and approved public GitHub publication.

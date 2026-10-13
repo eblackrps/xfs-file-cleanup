@@ -4,6 +4,14 @@ This **Linux / Python 3** utility inventories and, when requested, removes **com
 
 The utility **does not** adjust GFS retention, modify backup metadata, change immutable flags, remove Veeam `.veeam.N.lock` tracking files, or remove directories. It is a filesystem cleanup utility, **not** a Veeam-supported retention operation. Veeam recommends managing registered backups through its supported Delete from Disk/retention functions.
 
+## Operator documentation
+
+- [v0.5.0 Operator Guide (PDF)](docs/Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf) - complete operating instructions for v12/v13.
+- [Operator Guide (Markdown)](docs/OPERATOR_GUIDE.md) - readable source for the same instructions, including installation, retention, reporting, and troubleshooting.
+- [Validation evidence](docs/VALIDATION.md) - the tested code and known platform-validation limits.
+
+The downloadable customer package includes this v0.5.0 PDF and a SHA-256 manifest. Earlier v0.4.3 guides do not describe the new filename, VBM, or mount-safety behavior.
+
 ## Installation
 
 Copy `veeam_xfs_cleanup.py` to a local directory **outside the XFS repository** (for example `/opt/veeam-xfs-cleanup/`). The script uses Python **3.8+** standard library modules. A scheduled purge also requires **root privileges**, `findmnt`, `fuser` (package `psmisc`), a mounted **XFS** filesystem, and a functioning `/run/lock` directory, and readable `/proc/self/mountinfo` for detecting nested mounts (including same-filesystem bind mounts). The script is intended for manually administered Linux hardened repositories; the immutable-flag ioctl is implemented for x86_64 Linux. Veeam Infrastructure/Software Appliance hardened repositories are **not supported deployment targets** for root-level scheduled deletion by this utility.
