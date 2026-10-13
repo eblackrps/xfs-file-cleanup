@@ -1,0 +1,52 @@
+name: Prune merged release working branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prune-merged.yml
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Remove only verified merged, unchanged branch refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pairs=(
+            'import/v0.4.3:1'
+            'feature/v0.5.0-v12-v13:2'
+            'docs/v0.5.0-operator-guide:3'
+            'release/v0.5.0-formal:4'
+            'maintenance/prune-merged:5'
+          )
+          for pair in "${pairs[@]}"; do
+            branch="${pair%:*}"
+            number="${pair##*:}"
+            pull="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${number}")"
+            merged="$(jq -r '.merged_at // empty' <<< "${pull}")"
+            prhead="$(jq -r '.head.sha' <<< "${pull}")"
+            prbranch="$(jq -r '.head.ref' <<< "${pull}")"
+            prrepo="$(jq -r '.head.repo.full_name // empty' <<< "${pull}")"
+            if [[ -z "${merged}" || "${prbranch}" != "${branch}" || "${prrepo}" != "${GITHUB_REPOSITORY}" ]]; then
+              echo "SKIP: PR #${number} does not prove this branch was merged"
+              continue
+            fi
+            if ! actual="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" --jq '.object.sha' 2>/dev/null)"; then
+              echo "SKIP: branch ${branch} is already absent"
+              continue
+            fi
+            if [[ "${actual}" != "${prhead}" ]]; then
+              echo "SKIP: branch ${branch} has new commits after PR merge"
+              continue
+            fi
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+            echo "PRUNED: ${branch} (merged PR #${number})"
+          done
