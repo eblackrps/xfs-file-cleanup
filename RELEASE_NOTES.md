@@ -1,4 +1,4 @@
-# Veeam XFS Backup-Copy Cleanup v0.5.0-rc3 - Development Candidate
+# Veeam XFS Backup-Copy Cleanup v0.5.0 - GitHub Release
 
 **Scope:** one Linux / Python 3 cleanup utility for known Veeam Backup & Replication v12 and v13 backup-copy filesystem layouts on manually configured XFS hardened repositories.
 
@@ -6,7 +6,7 @@
 
 **New compatibility:** accepts legacy direct-date VM names and modern D-separated short-ID/GUID machine names; recognizes additional per-machine VBM filenames; reconciles machine identities across v12/v13 naming so a new incremental cannot strand its prior full. Unexpected metadata schema elements fail closed.
 
-**Release boundary:** tests use artificial backup files and representative XML layouts, not vendor-supplied real v13 VBM data. The previous customer's manual v12 test applies to v0.4.3 only. This version must not be described as production-certified for new v13 environments without platform and metadata acceptance evidence. Veeam software/infrastructure appliance root-level installs are not supported.
+**Publication approval:** the release owner manually reviewed v0.5.0 and approved public GitHub publication on October 13, 2026. The released code is identical to the reviewed rc3 Python source. Tests use artificial backup files and representative XML layouts, not vendor-supplied real v13 VBM data. The prior manual v12 test applies to v0.4.3 only; v13 production purge remains unverified on an actual hardened XFS repository. Veeam software/infrastructure appliance root-level installs are not supported.
 
 **Destructive-use rule:** ensure no backup-copy jobs can run during the entire purge. Veeam immutable flags are never cleared; uncertain chains stay on disk and are reported.
 

@@ -125,10 +125,10 @@ Official product descriptions:
 - https://helpcenter.veeam.com/docs/vbr/userguide/per_vm_backup_files.html?ver=13
 - https://helpcenter.veeam.com/docs/vbr/userguide/hardened_repository_immutability.html?ver=13
 
-## v0.5.0-rc3 validation boundary and operational safeguards
+## v0.5.0 release validation and operational safeguards
 
-The development/engineering package contains the full 146-test regression and destructive-path suite, including randomized mixed-version dependency checks and mounted-path failure simulations. The GitHub feature branch contains focused compatibility and adversarial regression tests; the complete historical suite ships with the engineering archive. A real v13 repository sample and an isolated mounted hardened-XFS deletion test have **not** been provided or independently verified. The v12 customer's previously reported manual approval applies to v0.4.3, not to new v13 behavior. This v0.5.0 development candidate is not a claim of Veeam vendor certification or completed v13 production acceptance.
+The release was manually reviewed and approved for **public GitHub publication** on October 13, 2026. The 146-test offline regression and destructive-path suite is retained in the engineering validation archive, while focused safety regressions are included under `tests/` in this GitHub repository. They use synthetic v12/v13 backup layouts and Linux filesystem fixtures. A real v13 repository sample and an isolated mounted hardened-XFS deletion test have **not** been provided or independently verified. The earlier manual v12 test applies to v0.4.3 and is not a v13 integration test. Public source availability is not Veeam vendor certification or proof that unattended destructive cleanup is safe on an untested v13 repository.
 
 **Mandatory purge conditions:** use the backup-copy-only repository root on a manually configured Linux XFS hardened repository, guarantee backup-copy jobs remain idle for the entire run, keep audit reports outside the repository, and investigate all rows of `flagged_not_removed_*.csv`. The script never overrides immutable flags or rewrites VBMs. If the metadata cannot establish a safe chain boundary, it leaves the old files on disk.
 
-See `RELEASE_NOTES.md` and `CHANGELOG.md` for version-specific detail.
+See `RELEASE_NOTES.md`, `CHANGELOG.md` and `docs/VALIDATION.md` for scope, release history and exact offline checks.

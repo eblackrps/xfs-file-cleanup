@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 - GitHub source release (2026-10-13)
+
+- Release owner manually reviewed and approved public GitHub publication.
+- Promote the **unchanged** tested rc3 Python cleanup code to the v0.5.0 source release.
+- Preserve the full, previously verified 146-test regression suite in the engineering validation archive; include focused permanent regressions with the GitHub source.
+- Preserve the existing audit, immutable-file protection, manual idle-window restriction and 28-day default.
+- Actual Veeam v13 VBM and mounted hardened-XFS destructive behavior remain outside independently verified test coverage. Publication does not certify unattended v13 purge.
+
 ## 0.5.0-rc3 - Final adversarial debug and metadata hardening (2026-10-13)
 
 - Fix VBM parsing of unknown Storage attribute values that reference backup payloads, even when a known FilePath also exists. Unknown path-bearing child attributes also fail closed; legitimate numeric and non-path attributes remain accepted.
