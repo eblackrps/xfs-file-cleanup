@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 - Formal GitHub release and repository housekeeping (2026-10-13)
+
+- Publish a tagged GitHub release with versioned customer ZIP, operator PDF and external SHA-256 checksums.
+- Automate reproducible packaging, focused regression checks and verification of downloaded release assets in GitHub Actions.
+- Link release downloads directly from the README and operator instructions.
+- Replace historical release-candidate prose in the user-facing release notes with a concise public release summary.
+- No cleanup engine, retention policy, safety guard or command-line behavior changes.
+
 ## 0.5.0 - Operator documentation publication (2026-10-13)
 
 - Publish the complete v12/v13 operator guide as PDF and Markdown in `docs/`.

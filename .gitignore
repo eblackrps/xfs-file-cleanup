@@ -29,3 +29,7 @@ fixtures/private/
 # Local bundles; publish vetted release assets separately
 *.zip
 *.tar.gz
+
+# Generated release output; source docs in docs/ remain tracked
+dist/
+release-download/

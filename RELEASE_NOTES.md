@@ -1,31 +1,41 @@
-# Veeam XFS Backup-Copy Cleanup v0.5.0 - GitHub Release
+# Veeam XFS Backup-Copy Cleanup v0.5.0
 
-**Scope:** one Linux / Python 3 cleanup utility for known Veeam Backup & Replication v12 and v13 backup-copy filesystem layouts on manually configured XFS hardened repositories.
+First formal GitHub release - October 13, 2026
 
-**Preserved operation:** menu-driven dry run, interactive scan and purge, unattended `--purge`, 28-day default, immutable-file protection, VBM guardrails, repository change detection, audit logging, and flagged-not-removed reports.
+## Overview
 
-**New compatibility:** accepts legacy direct-date VM names and modern D-separated short-ID/GUID machine names; recognizes additional per-machine VBM filenames; reconciles machine identities across v12/v13 naming so a new incremental cannot strand its prior full. Unexpected metadata schema elements fail closed.
+v0.5.0 provides a single Linux/Python cleanup tool for supported filesystem layouts produced by Veeam Backup & Replication v12 and v13 backup-copy jobs on conventional XFS hardened repositories. It inventories possible expired chains and can remove independently eligible files only after additional identity, metadata and immutability checks.
 
-**Publication approval:** the release owner manually reviewed v0.5.0 and approved public GitHub publication on October 13, 2026. The released code is identical to the reviewed rc3 Python source. Tests use artificial backup files and representative XML layouts, not vendor-supplied real v13 VBM data. The prior manual v12 test applies to v0.4.3 only; v13 production purge remains unverified on an actual hardened XFS repository. Veeam software/infrastructure appliance root-level installs are not supported.
+The default cutoff is **28 elapsed days**. The tool operates locally, without access to VBR, and never edits VBMs, clears immutable flags, changes GFS retention, removes Veeam immutability tracking files or deletes directories.
 
-**Destructive-use rule:** ensure no backup-copy jobs can run during the entire purge. Veeam immutable flags are never cleared; uncertain chains stay on disk and are reported.
+## Highlights
 
-**Source and history:** https://github.com/eblackrps/xfs-file-cleanup
+- Recognizes legacy v12, newer v13 machine-ID/GUID, and documented name-only timestamped backup filenames.
+- Holds mixed-version or ambiguous dependency chains, including unknown VBM Storage references and malformed machine IDs, instead of treating them as safe to delete.
+- Detects changes in repository files and metadata, nested/bind mounts, open backup file handles, and overlapping cleanup sessions.
+- Provides interactive scan, confirmed cleanup, unattended `--purge`, CSV decisions, flagged-not-removed reports and a durable deletion audit journal.
+- Keeps the accepted v0.4.3 cleanup interfaces; all cleanup source code matches the reviewed v0.5.0-rc3 candidate.
 
-**Operator documentation:** [v0.5.0 PDF guide](docs/Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf) and [Markdown guide](docs/OPERATOR_GUIDE.md). They cover v12/v13 backup names, VBM dependency safeguards, nested/bind mount detection, installation, reports, exit codes, scheduling, and safe recovery after interrupted purge.
+## Release assets
 
-**Documentation revision:** October 13, 2026. No functional changes were made to the published `veeam_xfs_cleanup.py` code.
+- **`veeam_xfs_cleanup_v0.5.0_client_with_guide.zip`** - Python script, README, license, version history, Markdown/PDF operating guide and internal file checksums.
+- **`Veeam_XFS_Backup_Copy_Cleanup_v0.5.0_Operator_Guide.pdf`** - standalone searchable PDF.
+- **`veeam_xfs_cleanup_v0.5.0_SHA256SUMS.txt`** - checksums for the downloadable ZIP and PDF.
 
-## v0.5.0-rc2 independent debug additions
+The source, installation commands and operator instructions are available in this repository. The archive is generated from the tag by `scripts/build_release.py` and verified in the GitHub publishing workflow.
 
-- Recognizes Veeam's documented machine-name-only `WorkloadD...` VBK/VIB filenames without losing protection for later increments.
-- Rejects unknown XML references in alternative metadata storage layouts while preserving known Storage/FilePath fields.
-- Refuses nested same-filesystem bind mounts; the Linux `/proc/self/mountinfo` requirement is documented.
-- The deletion engine, menu, unattended `--purge`, immutable-bit handling, and reporting remain the same.
-- At the rc2 stage, authentic Veeam v13 metadata and mounted XFS integration proof were unavailable; that limitation also applies to the final v0.5.0 publication.
+## Validation
 
-## v0.5.0-rc3 final-debug changes
+The v0.5.0 cleanup code completed two separate no-change offline review gates. The engineering suite passed **146/146** Linux root tests, **144** non-root tests with two expected privileged skips, and additional synthetic mixed-version chain scenarios. The publishing workflow runs the focused tests committed in this repository and verifies the release assets after download.
 
-The independent rc2 review reproduced an ignored alternative VBM Storage attribute reference and a malformed machine-ID filename being accepted as name-only data. Both could make an old file eligible without sufficient dependency evidence. These inputs now fail closed. Full and eight-character abbreviated GUID-style identifiers remain supported; inconsistent intermediate lengths are rejected. No change was made to the 28-day default, interactive menu, unattended mode, XFS immutability handling, or audit journal.
+**Important:** The v13 compatibility tests use synthetic file and XML fixtures. Authentic v13 VBM metadata and destructive cleanup on an actual mounted hardened XFS repository were **not** independently validated. Earlier customer manual testing applied to v0.4.3/v12, not native v13 workflows. This is a public source release, **not** Veeam vendor certification or approval for unattended production v13 deletion.
 
-The rc3 code has new permanent tests for the failure cases and randomized v12/v13 incremental dependency checks. All destruction simulation tests use disposable Linux data with mocked XFS prerequisites. The real v13 VBM/XFS acceptance remains outstanding; do not deploy unattended destructive v13 cleanup solely on the basis of these synthetic tests.
+All destructive runs require a guaranteed backup-copy idle window. Veeam Infrastructure/Software Appliance root-level scheduling is outside the supported scope. Review `docs/OPERATOR_GUIDE.md` before use.
+
+## Release identity
+
+- Version: **0.5.0**
+- Tag: **v0.5.0**
+- Previously reviewed source Git blob: `aca3ac74c244f0edd9fdc73a0811692066e1fd51`
+- License: MIT
+

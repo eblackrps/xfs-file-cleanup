@@ -27,7 +27,7 @@ findmnt -n -o TARGET,FSTYPE --target '/mnt/YOUR_VOLUME/backups'
 
 ## 2. Installation and package verification
 
-Use the matching v0.5.0 customer package, not the earlier v0.4.3 ZIP. The refreshed package is named veeam_xfs_cleanup_v0.5.0_client_with_guide.zip and contains veeam_xfs_cleanup_v0.5.0/ with the script, documentation and SHA256SUMS.txt.
+Download the matching [v0.5.0 customer package](https://github.com/eblackrps/xfs-file-cleanup/releases/download/v0.5.0/veeam_xfs_cleanup_v0.5.0_client_with_guide.zip), not the earlier v0.4.3 ZIP. The refreshed package is named veeam_xfs_cleanup_v0.5.0_client_with_guide.zip and contains veeam_xfs_cleanup_v0.5.0/ with the script, documentation and SHA256SUMS.txt.
 
 ```sh
 unzip veeam_xfs_cleanup_v0.5.0_client_with_guide.zip
