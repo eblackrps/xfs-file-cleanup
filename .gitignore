@@ -1,0 +1,31 @@
+# Python runtimes and temporary results
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.venv/
+venv/
+
+# Never commit repository backup data, scan outputs, or customer evidence
+*.vbk
+*.vib
+*.vrb
+*.vbm
+*.vib_tmp
+*.vrb_tmp
+*.vlb
+*.lock
+*.csv
+*.jsonl
+*.log
+*.sqlite
+*.db
+*.env
+*.env.*
+reports/
+*cleanup-reports*/
+fixtures/private/
+
+# Local bundles; publish vetted release assets separately
+*.zip
+*.tar.gz
