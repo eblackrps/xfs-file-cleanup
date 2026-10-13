@@ -1,4 +1,4 @@
-# v0.5.0-rc2 Dual-Version Debug, Rubber-Duck and Offline Validation
+# v0.5.0-rc3 Dual-Version Debug, Rubber-Duck and Offline Validation
 
 Baseline: `eblackrps/xfs-file-cleanup` main commit `7997e4b46a93b8cf73d0b96949054e5eef9d1a2e` (v0.4.3).
 
@@ -6,8 +6,8 @@ Scope: Linux/XFS backup-copy filesystem cleanup, 28 elapsed days by default, v12
 
 ## Offline checks
 
-- 134 automated regression tests passed with root permissions; includes 102 original tests and dual-version, name-only filename, unknown XML schema, nested-mount, CLI and failure-injection cases.
-- 132 tests passed as an unprivileged Linux user; two root-required purge/lock tests skipped as designed.
+- 146 automated regression tests passed in the initial remediation run with root permissions. New rc3 cases cover hidden VBM XML Storage references, malformed machine IDs, GUID-boundary input, and randomized mixed-version chains.
+- Non-root execution is revalidated in the frozen rc3 gate; two root-required purge/lock tests remain intentionally excluded when running without root.
 - 150 existing plus 300 new randomly generated mixed-version name/dependency scenarios checked; recent v13 incrementals never authorized deletion of older potentially dependent fulls.
 - Python 3.8 syntax compatibility confirmed with `ast.parse(feature_version=(3,8))`; actual Python 3.8 interpreter was not available in this environment.
 - CLI menu, `--dry-run`, simulated root-only `--purge`, end-to-end name-only chain deletion/retention, report generation, mount-aware refusal, and non-XFS purge refusal covered in the suite.
@@ -39,3 +39,11 @@ Scope: Linux/XFS backup-copy filesystem cleanup, 28 elapsed days by default, v12
 - Deletion must run only in a guaranteed backup-copy idle window.
 - Unknown/unverifiable dependencies remain in `flagged_not_removed_*.csv`.
 - Reports are created outside the repository and audits are journaled before unlink.
+
+## rc3 corrective findings and verified behavior
+
+1. An alternative `Storage` attribute (for example `PreviousFilePath`) could name an older VBK while a recognized `FilePath` named a newer VBK. The old reference was discarded by the parser, which could make the older full purge-eligible. The parser now holds any unknown path-bearing Storage attribute or recognized child attribute; benign numeric/non-path attributes remain accepted.
+2. An invalid `vm-` identity containing non-hex characters could fall back to the `WorkloadDtimestamp` filename profile. When the entire directory was old, that malformed backup could be classified as a purge candidate. Malformed identity-like names now make the directory REVIEW instead.
+3. The GUID-like terminal component accepted nine, ten, or eleven hexadecimal digits without evidence that those layouts are valid. Only the eight-digit form supported in the accepted regression fixtures and the twelve-digit full form are recognized.
+
+No external VBR or real XFS tests have been supplied for rc3. Dry-run and synthetic purge tests, checksummed source archives, and a second independent no-change release pass are required for the offline-only verdict.

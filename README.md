@@ -48,7 +48,7 @@ Supply the **backup-copy repository root**, typically the folder immediately abo
 
 For recognized v12 or v13 names, a payload chain begins at a full `.vbk`, with subsequent `.vib` files grouped to their applicable full by the recognized Veeam filename pattern. Only a chain for which **every member is older than the configured number of days**, based on both filename restore-point time and file modification time, may be considered. A newer full in the same directory is treated as a separate chain, but a retained metadata file or newer incremental can block removal of the older chain when a dependency is present or cannot be resolved.
 
-The script reads understood `.vbm` XML Storage references and checks metadata in the workload folder, parent job folder, and elsewhere in the inventory. Modern per-machine VBM naming and legacy shared VBM layouts are both considered. Unrecognized or path-bearing alternate XML storage layouts are flagged for review rather than assumed empty. It never edits `.vbm`. Files that are orphaned, expired, or not recognized in VBR can still be considered from repository evidence alone; unverifiable dependencies remain flagged.
+The script reads understood `.vbm` XML Storage references and checks metadata in the workload folder, parent job folder, and elsewhere in the inventory. Modern per-machine VBM naming and legacy shared VBM layouts are both considered. Unrecognized or path-bearing alternate XML storage layouts, including extra backup-file references in unexpected Storage attributes, are flagged for review rather than assumed empty. Malformed machine-ID-looking filenames are also held rather than silently falling back to name-only chains. It never edits `.vbm`. Files that are orphaned, expired, or not recognized in VBR can still be considered from repository evidence alone; unverifiable dependencies remain flagged.
 
 Decision statuses:
 
@@ -125,9 +125,9 @@ Official product descriptions:
 - https://helpcenter.veeam.com/docs/vbr/userguide/per_vm_backup_files.html?ver=13
 - https://helpcenter.veeam.com/docs/vbr/userguide/hardened_repository_immutability.html?ver=13
 
-## v0.5.0 validation boundary and operational safeguards
+## v0.5.0-rc3 validation boundary and operational safeguards
 
-The development/engineering package contains the full 134-test regression and destructive-path suite, including randomized mixed-version dependency checks and mounted-path failure simulations. The GitHub feature branch contains focused compatibility and adversarial regression tests; the complete historical suite ships with the engineering archive. A real v13 repository sample and an isolated mounted hardened-XFS deletion test have **not** been provided or independently verified. The v12 customer's previously reported manual approval applies to v0.4.3, not to new v13 behavior. This v0.5.0 development candidate is not a claim of Veeam vendor certification or completed v13 production acceptance.
+The development/engineering package contains the full 146-test regression and destructive-path suite, including randomized mixed-version dependency checks and mounted-path failure simulations. The GitHub feature branch contains focused compatibility and adversarial regression tests; the complete historical suite ships with the engineering archive. A real v13 repository sample and an isolated mounted hardened-XFS deletion test have **not** been provided or independently verified. The v12 customer's previously reported manual approval applies to v0.4.3, not to new v13 behavior. This v0.5.0 development candidate is not a claim of Veeam vendor certification or completed v13 production acceptance.
 
 **Mandatory purge conditions:** use the backup-copy-only repository root on a manually configured Linux XFS hardened repository, guarantee backup-copy jobs remain idle for the entire run, keep audit reports outside the repository, and investigate all rows of `flagged_not_removed_*.csv`. The script never overrides immutable flags or rewrites VBMs. If the metadata cannot establish a safe chain boundary, it leaves the old files on disk.
 

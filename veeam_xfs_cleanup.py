@@ -50,7 +50,9 @@ VEEAM_LOCK = re.compile(r"\.veeam\.\d+\.lock", re.I)
 # format. Unrecognized or ambiguous metadata must stay protected.
 DATE_COMPONENT = r"20\d{2}-\d{2}-\d{2}T\d{6}"
 VM_SHORT_ID = r"vm-[0-9a-fA-F]{1,16}"
-VM_GUID_ID = r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{8,12}"
+# Veeam-style eight-digit machine suffixes exist in the accepted fixtures;
+# full GUIDs use 12. Do not silently accept intermediate malformed lengths.
+VM_GUID_ID = r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{12})"
 VM_PATTERN_SEPARATED = re.compile(
     r"^(?P<workload>.+)\.(?P<vmid>(?:" + VM_SHORT_ID + "|" + VM_GUID_ID +
     r"))D(?P<created>" + DATE_COMPONENT + r")(?:_[0-9a-fA-F]{4,8})?$", re.I
@@ -67,7 +69,9 @@ VM_PATTERN_NAME_ONLY = re.compile(
     r"^(?P<workload>.+)D(?P<created>" + DATE_COMPONENT +
     r")(?:_[0-9a-fA-F]{4,8})?$", re.I
 )
-MACHINE_ID_LOOKALIKE = re.compile(r"\.(?:vm-[0-9a-fA-F]+|[0-9a-fA-F-]{20,})$", re.I)
+# A malformed vm-identity must not become a name-only identity simply
+# because a character in the ID is not hexadecimal.
+MACHINE_ID_LOOKALIKE = re.compile(r"\.(?:vm-[^./]+|[A-Za-z0-9-]{20,})$", re.I)
 NO_MACHINE_ID = "~name-only"
 VBM_PATTERN = re.compile(r"^(?P<workload>.+)_[a-fA-F0-9]{4,8}$")
 VBM_PER_MACHINE = re.compile(
@@ -377,6 +381,21 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
     return files, hazards, auxiliary
 
 
+def malformed_machine_identity(file: FileInfo) -> bool:
+    """Conservatively recognize machine-ID-shaped but unsupported file names.
+
+    Old unknown backups are intentionally reportable/removable in an all-old
+    directory, but an invalid V12/V13 identity can hide a dependency. It is
+    not safe to treat that specific unrecognized form as an abandoned file.
+    """
+    if file.kind not in {"vbk", "vib", "vrb"}:
+        return False
+    stem = Path(file.name).stem
+    fallback = VM_PATTERN_NAME_ONLY.fullmatch(stem)
+    return bool(fallback and MACHINE_ID_LOOKALIKE.search(fallback.group("workload"))
+                and backup_filename_match(stem) is None)
+
+
 def pattern_workload(file: FileInfo) -> Optional[str]:
     stem = Path(file.name).stem
     if file.kind in {"vbk", "vib", "vrb"}:
@@ -425,6 +444,11 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
         if root.tag.rsplit("}", 1)[-1].lower() != "backupmeta":
             return set(), "VBM-unexpected-root"
         result: Set[str] = set()
+        def payload_looking(value: str) -> bool:
+            # An unfamiliar attribute may encode another storage dependency;
+            # ignoring it can incorrectly authorize a destructive unlink.
+            return Path(ntpath.basename(value.replace("/", "\\"))).suffix.lower() in PAYLOAD_EXTS
+
         # Children explicitly parsed as Storage.FilePath/FileName are not
         # unknown schema elements. Other path-bearing elements remain unsafe.
         understood_children = {id(child) for parent in root.iter()
@@ -436,6 +460,8 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
             local_tag = element.tag.rsplit("}", 1)[-1].lower()
             if local_tag != "storage":
                 if id(element) in understood_children:
+                    if any(payload_looking(value) for value in element.attrib.values()):
+                        return set(), "VBM-unrecognized-storage-schema"
                     continue
                 # An unfamiliar XML element may contain a backup file path.
                 # It is NOT evidence of an empty dependency map. Holding such
@@ -443,10 +469,14 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
                 possible_values = list(element.attrib.values())
                 if element.text:
                     possible_values.append(element.text.strip())
-                if any(Path(ntpath.basename(value.replace("/", "\\"))).suffix.lower()
-                       in PAYLOAD_EXTS for value in possible_values if value):
+                if any(payload_looking(value) for value in possible_values if value):
                     return set(), "VBM-unrecognized-storage-schema"
                 continue
+            if any(payload_looking(value) for key, value in element.attrib.items()
+                   if key.rsplit("}", 1)[-1].lower() not in ("filepath", "filename")):
+                return set(), "VBM-unrecognized-storage-schema"
+            if element.text and payload_looking(element.text.strip()):
+                return set(), "VBM-unrecognized-storage-schema"
             values = [value for key, value in element.attrib.items()
                       if key.rsplit("}", 1)[-1].lower() in ("filepath", "filename")]
             values.extend((child.text or "").strip() for child in element
@@ -530,6 +560,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             else:
                 unknown_payloads.append(rel)
         duplicate_names = [base for base, paths in by_basename.items() if len(paths) != 1]
+        invalid_id_layout = any(malformed_machine_identity(files[p]) for p in unknown_payloads)
         # An unrecognized payload could be required by any recognized chain;
         # refusing mixed-age ambiguity avoids deleting an unseen dependency.
         folder_mixed = (any(files[p].mtime_ns >= cutoff_ns for p in members) or
@@ -662,6 +693,10 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             if generic_ambiguity:
                 reasons.append("mixed-age-unrecognized-files-or-unmapped-metadata" if not duplicate_names
                                else "duplicate-case-insensitive-filenames")
+            if invalid_id_layout:
+                # Malformed machine identities can hide a newer incremental's
+                # parent. Hold every chain in this folder, even if all are old.
+                reasons.append("invalid-machine-id-filename")
             if any(files[p].nlink != 1 for p in group.files):
                 reasons.append("hardlinks-present")
             if group.group_type == "UNCLASSIFIED" and folder_mixed:
@@ -725,7 +760,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             blockers = [r for r in reasons if r.startswith((
                 "unsafe-entries:", "mixed-age-unrecognized", "duplicate-case", "hardlinks-present",
                 "unclassified-file-in-mixed", "ambiguous-same", "recent-unbased",
-                "unsupported-reverse-incremental-layout",
+                "unsupported-reverse-incremental-layout", "invalid-machine-id-filename",
                 "unreadable-associated", "incomplete-active-vbm", "recent-associated"))]
             contains_recent = any(r.startswith("contains-recent") for r in reasons)
             if blockers:
@@ -740,7 +775,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             reasons = [x for x in group.reason.split("; ") if x]
             if directory_hazards:
                 reasons.append("unsafe-entries:" + ",".join(sorted(directory_hazards)))
-            if generic_ambiguity:
+            if generic_ambiguity or invalid_id_layout:
                 reasons.append("unmapped-or-ambiguous-directory")
             if files[meta_rel].nlink != 1:
                 reasons.append("hardlinks-present")

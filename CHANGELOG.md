@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-rc3 - Final adversarial debug and metadata hardening (2026-10-13)
+
+- Fix VBM parsing of unknown Storage attribute values that reference backup payloads, even when a known FilePath also exists. Unknown path-bearing child attributes also fail closed; legitimate numeric and non-path attributes remain accepted.
+- Refuse malformed machine-ID-like backup filenames instead of accepting them as ordinary name-only backup chains. Block every chain in the affected directory, even when all files are old, to avoid severing an unidentified dependency.
+- Restrict GUID-like terminal identifiers to the accepted eight-character abbreviated form and twelve-character full form; reject unsupported intermediate lengths.
+- Add permanent regression cases for every reproduced defect, positive compatibility controls, and 600 seeded mixed-version dependency scenarios.
+- Keep all existing v12/v13 CLI modes, 28-day default, journaling, mount safety, and XFS immutability protections unchanged.
+- Retain the v13 production gate: synthetic metadata is not proof of native v13/XFS safe deletion.
+
 ## 0.5.0-rc2 - Full debug and rubber-duck remediation (2026-10-13)
 
 - Added name-only `WorkloadDYYYY-MM-DDTHHMMSS` backup file recognition documented by Veeam; retained v12 and v13 machine-ID formats and guarded malformed ID fallbacks.
