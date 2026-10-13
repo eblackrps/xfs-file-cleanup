@@ -1,4 +1,4 @@
-# Veeam XFS Backup-Copy Cleanup v0.5.0 - Development Candidate
+# Veeam XFS Backup-Copy Cleanup v0.5.0-rc2 - Development Candidate
 
 **Scope:** one Linux / Python 3 cleanup utility for known Veeam Backup & Replication v12 and v13 backup-copy filesystem layouts on manually configured XFS hardened repositories.
 
@@ -11,3 +11,11 @@
 **Destructive-use rule:** ensure no backup-copy jobs can run during the entire purge. Veeam immutable flags are never cleared; uncertain chains stay on disk and are reported.
 
 **Source and history:** https://github.com/eblackrps/xfs-file-cleanup
+
+## v0.5.0-rc2 independent debug additions
+
+- Recognizes Veeam's documented machine-name-only `WorkloadD...` VBK/VIB filenames without losing protection for later increments.
+- Rejects unknown XML references in alternative metadata storage layouts while preserving known Storage/FilePath fields.
+- Refuses nested same-filesystem bind mounts; the Linux `/proc/self/mountinfo` requirement is documented.
+- The deletion engine, menu, unattended `--purge`, immutable-bit handling, and reporting remain the same.
+- This remains a candidate: no authenticated Veeam v13 metadata or mounted XFS integration proof is available.

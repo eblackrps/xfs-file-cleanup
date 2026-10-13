@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-rc2 - Full debug and rubber-duck remediation (2026-10-13)
+
+- Added name-only `WorkloadDYYYY-MM-DDTHHMMSS` backup file recognition documented by Veeam; retained v12 and v13 machine-ID formats and guarded malformed ID fallbacks.
+- Fixed the VBM XML parser treating non-Storage backup file references as an empty map; unfamiliar path-bearing layouts now fail closed.
+- Preserved correct `<Storage><FilePath>` parsing while applying that broader unknown-schema guard.
+- Added `/proc/self/mountinfo` nested-mount detection to reject same-filesystem bind mounts that device-ID checks miss, including before each deletion.
+- Re-ran 134 automated regressions, 300 additional randomized legacy/modern workload identities, Python 3.8 syntax parsing, and a non-root execution sweep.
+- Only synthetic Veeam v13 metadata and disposable Linux filesystem operations were used; vendor v13 native data and mounted XFS acceptance remain unverified.
+
 ## 0.5.0 - Dual-version development candidate (2026-10-13)
 
 - Preserve the v0.4.3 Linux/XFS purge safeguards, interactive menu, unattended mode, reports, audit journal, and 28-day default.

@@ -59,6 +59,16 @@ VM_PATTERN_LEGACY = re.compile(
     r"^(?P<workload>.+)\.vm-(?P<vmid>[0-9a-fA-F]{4,16})(?P<created>" +
     DATE_COMPONENT + r")(?:_[0-9a-fA-F]{4,8})?$", re.I
 )
+# Veeam also documents a workload-name-only DYYYY-MM-DDTHHMMSS
+# filename (for example, "Empty VM encryptedD2017-09-22T172639.vbk").
+# Never allow a malformed machine-ID suffix to silently fall back to this
+# identity-free profile: that would split a chain's dependency identity.
+VM_PATTERN_NAME_ONLY = re.compile(
+    r"^(?P<workload>.+)D(?P<created>" + DATE_COMPONENT +
+    r")(?:_[0-9a-fA-F]{4,8})?$", re.I
+)
+MACHINE_ID_LOOKALIKE = re.compile(r"\.(?:vm-[0-9a-fA-F]+|[0-9a-fA-F-]{20,})$", re.I)
+NO_MACHINE_ID = "~name-only"
 VBM_PATTERN = re.compile(r"^(?P<workload>.+)_[a-fA-F0-9]{4,8}$")
 VBM_PER_MACHINE = re.compile(
     r"^(?P<workload>.+)\.(?:" + VM_SHORT_ID + "|" + VM_GUID_ID +
@@ -68,7 +78,13 @@ VBM_PER_MACHINE = re.compile(
 
 def backup_filename_match(stem: str) -> Optional[re.Match]:
     """Return a validated V12/V13 filename match, with explicit D preferred."""
-    return VM_PATTERN_SEPARATED.fullmatch(stem) or VM_PATTERN_LEGACY.fullmatch(stem)
+    known = VM_PATTERN_SEPARATED.fullmatch(stem) or VM_PATTERN_LEGACY.fullmatch(stem)
+    if known:
+        return known
+    name_only = VM_PATTERN_NAME_ONLY.fullmatch(stem)
+    if name_only and not MACHINE_ID_LOOKALIKE.search(name_only.group("workload")):
+        return name_only
+    return None
 
 
 @dataclass(frozen=True)
@@ -269,6 +285,24 @@ def ensure_xfs(root: Path) -> str:
     return "xfs"
 
 
+def nested_mount_points(root: Path) -> Set[str]:
+    """Return mounted subpaths, including same-device bind mounts, via mountinfo."""
+    try:
+        mountinfo = Path("/proc/self/mountinfo").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise Refuse("Cannot inspect Linux mount points: " + str(exc)) from exc
+    prefix = str(root).rstrip("/") + "/"
+    found: Set[str] = set()
+    for line in mountinfo.splitlines():
+        fields = line.split()
+        if len(fields) < 6 or "-" not in fields:
+            raise Refuse("Malformed /proc/self/mountinfo: nested mounts cannot be ruled out")
+        mount = re.sub(r"\\([0-7]{3})", lambda m: chr(int(m.group(1), 8)), fields[4])
+        if mount.startswith(prefix):
+            found.add(mount)
+    return found
+
+
 def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict[str, Set[str]]]:
     """Scan *all* files, not only old ones, to protect mixed active chains.
 
@@ -279,6 +313,9 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
     hazards: Dict[str, Set[str]] = defaultdict(set)
     auxiliary: Dict[str, Set[str]] = defaultdict(set)
     root_dev = root.stat().st_dev
+    # st_dev alone cannot detect Linux bind mounts on the same XFS volume.
+    # Skip mounted child trees and make all destructive runs refuse them.
+    nested_mounts = nested_mount_points(root)
 
     def walk_error(err: OSError) -> None:
         raise Refuse("Repository scan incomplete: " + str(err))
@@ -293,7 +330,9 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
         for name in dirs:
             child = folder / name
             st = child.lstat()
-            if stat.S_ISLNK(st.st_mode):
+            if str(child) in nested_mounts:
+                hazards[directory].add("foreign-mount:" + name)
+            elif stat.S_ISLNK(st.st_mode):
                 hazards[directory].add("symlink-directory:" + name)
             elif st.st_dev != root_dev:
                 hazards[directory].add("foreign-mount:" + name)
@@ -386,8 +425,27 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
         if root.tag.rsplit("}", 1)[-1].lower() != "backupmeta":
             return set(), "VBM-unexpected-root"
         result: Set[str] = set()
+        # Children explicitly parsed as Storage.FilePath/FileName are not
+        # unknown schema elements. Other path-bearing elements remain unsafe.
+        understood_children = {id(child) for parent in root.iter()
+                               if parent.tag.rsplit("}", 1)[-1].lower() == "storage"
+                               for child in parent
+                               if child.tag.rsplit("}", 1)[-1].lower()
+                               in ("filepath", "filename")}
         for element in root.iter():
-            if element.tag.rsplit("}", 1)[-1].lower() != "storage":
+            local_tag = element.tag.rsplit("}", 1)[-1].lower()
+            if local_tag != "storage":
+                if id(element) in understood_children:
+                    continue
+                # An unfamiliar XML element may contain a backup file path.
+                # It is NOT evidence of an empty dependency map. Holding such
+                # metadata is safer than treating an unknown V13 schema as old.
+                possible_values = list(element.attrib.values())
+                if element.text:
+                    possible_values.append(element.text.strip())
+                if any(Path(ntpath.basename(value.replace("/", "\\"))).suffix.lower()
+                       in PAYLOAD_EXTS for value in possible_values if value):
+                    return set(), "VBM-unrecognized-storage-schema"
                 continue
             values = [value for key, value in element.attrib.items()
                       if key.rsplit("}", 1)[-1].lower() in ("filepath", "filename")]
@@ -429,7 +487,7 @@ def payload_parts(file: FileInfo) -> Optional[Tuple[str, str, int]]:
     created = timestamp_from_name(file)
     if created is None:
         return None
-    vmid = match.group("vmid").casefold()
+    vmid = (match.groupdict().get("vmid") or NO_MACHINE_ID).casefold()
     # Legacy names capture the identifier without the 'vm-' prefix; the
     # explicit-D profile includes it. Normalize both so a V12 full and a V13
     # incremental cannot be mistaken for unrelated chains after an upgrade.
@@ -1227,6 +1285,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
         # Direct callers still receive marker-change protection. Production
         # callers use the already verified second snapshot for this baseline.
         auxiliary = snapshot(root)[2]
+    if nested_mount_points(root):
+        raise Refuse("Nested mounts detected in repository; purge refused")
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     failures, deleted = 0, 0
     outcomes: Dict[str, str] = {}
@@ -1244,6 +1304,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
                                key=lambda r: {"vib": 0, "vrb": 0, "vbk": 1, "vbm": 2}[files[r].kind])
                 fd = None
                 try:
+                    if nested_mount_points(root):
+                        raise Refuse("New nested mount detected before purge group")
                     fd = open_safe_dir(root_fd, group.directory)
                     # Never delete a VBM if any payload it references still
                     # exists, including a blocked or partially deleted chain.
@@ -1277,6 +1339,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
                     # without changing its parent directory timestamps.
                     assert_all_payload_files_unchanged(root_fd, by_directory, outcomes)
                     for rel in paths:
+                        if nested_mount_points(root):
+                            raise Refuse("Nested mount appeared during purge")
                         assert_no_new_backup_activity(root_fd, group.directory,
                                                       by_directory[group.directory],
                                                       outcomes, auxiliary, by_directory)
