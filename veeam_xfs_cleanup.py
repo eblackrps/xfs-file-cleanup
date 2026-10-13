@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Veeam v12 XFS backup-copy repository chain cleanup.
+"""Veeam v12/v13 Linux XFS backup-copy repository chain cleanup.
 
 Interactive menu, explicit --dry-run, confirmed --scan-purge, and automatic
 --purge for scheduled tasks. Every purge includes a new, verified scan.
@@ -42,13 +42,53 @@ CONFIRM = "DELETE-EXPIRED-VEEAM-BACKUPS"
 UTC = dt.timezone.utc
 VEEAM_LOCK = re.compile(r"\.veeam\.\d+\.lock", re.I)
 
-# Exactly the naming pattern seen on the customer's v12 backup copy repository.
-# The VM's short identifier precedes the timestamp without an intervening dot.
-VM_PATTERN = re.compile(
-    r"^(?P<workload>.+)\.vm-(?P<vmid>[0-9a-fA-F]{4,16})(?P<created>20\d{2}-\d{2}-\d{2}T\d{6})"
-    r"(?:_[0-9a-fA-F]{4,8})?$"
+# V12 repositories can retain legacy per-VM names on a V13 backup server.
+# The explicit D separator is common in modern per-machine backups; VMware
+# identities may be short vm-N values, and Hyper-V IDs may be GUIDs. The
+# legacy V12 form placed the timestamp directly after a hex VM identifier.
+# These are *positive* filename patterns, not a claim to parse every backup
+# format. Unrecognized or ambiguous metadata must stay protected.
+DATE_COMPONENT = r"20\d{2}-\d{2}-\d{2}T\d{6}"
+VM_SHORT_ID = r"vm-[0-9a-fA-F]{1,16}"
+# Veeam-style eight-digit machine suffixes exist in the accepted fixtures;
+# full GUIDs use 12. Do not silently accept intermediate malformed lengths.
+VM_GUID_ID = r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{12})"
+VM_PATTERN_SEPARATED = re.compile(
+    r"^(?P<workload>.+)\.(?P<vmid>(?:" + VM_SHORT_ID + "|" + VM_GUID_ID +
+    r"))D(?P<created>" + DATE_COMPONENT + r")(?:_[0-9a-fA-F]{4,8})?$", re.I
 )
+VM_PATTERN_LEGACY = re.compile(
+    r"^(?P<workload>.+)\.vm-(?P<vmid>[0-9a-fA-F]{4,16})(?P<created>" +
+    DATE_COMPONENT + r")(?:_[0-9a-fA-F]{4,8})?$", re.I
+)
+# Veeam also documents a workload-name-only DYYYY-MM-DDTHHMMSS
+# filename (for example, "Empty VM encryptedD2017-09-22T172639.vbk").
+# Never allow a malformed machine-ID suffix to silently fall back to this
+# identity-free profile: that would split a chain's dependency identity.
+VM_PATTERN_NAME_ONLY = re.compile(
+    r"^(?P<workload>.+)D(?P<created>" + DATE_COMPONENT +
+    r")(?:_[0-9a-fA-F]{4,8})?$", re.I
+)
+# A malformed vm-identity must not become a name-only identity simply
+# because a character in the ID is not hexadecimal.
+MACHINE_ID_LOOKALIKE = re.compile(r"\.(?:vm-[^./]+|[A-Za-z0-9-]{20,})$", re.I)
+NO_MACHINE_ID = "~name-only"
 VBM_PATTERN = re.compile(r"^(?P<workload>.+)_[a-fA-F0-9]{4,8}$")
+VBM_PER_MACHINE = re.compile(
+    r"^(?P<workload>.+)\.(?:" + VM_SHORT_ID + "|" + VM_GUID_ID +
+    r")(?:_[0-9a-fA-F]{4,8})?$", re.I
+)
+
+
+def backup_filename_match(stem: str) -> Optional[re.Match]:
+    """Return a validated V12/V13 filename match, with explicit D preferred."""
+    known = VM_PATTERN_SEPARATED.fullmatch(stem) or VM_PATTERN_LEGACY.fullmatch(stem)
+    if known:
+        return known
+    name_only = VM_PATTERN_NAME_ONLY.fullmatch(stem)
+    if name_only and not MACHINE_ID_LOOKALIKE.search(name_only.group("workload")):
+        return name_only
+    return None
 
 
 @dataclass(frozen=True)
@@ -249,6 +289,24 @@ def ensure_xfs(root: Path) -> str:
     return "xfs"
 
 
+def nested_mount_points(root: Path) -> Set[str]:
+    """Return mounted subpaths, including same-device bind mounts, via mountinfo."""
+    try:
+        mountinfo = Path("/proc/self/mountinfo").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise Refuse("Cannot inspect Linux mount points: " + str(exc)) from exc
+    prefix = str(root).rstrip("/") + "/"
+    found: Set[str] = set()
+    for line in mountinfo.splitlines():
+        fields = line.split()
+        if len(fields) < 6 or "-" not in fields:
+            raise Refuse("Malformed /proc/self/mountinfo: nested mounts cannot be ruled out")
+        mount = re.sub(r"\\([0-7]{3})", lambda m: chr(int(m.group(1), 8)), fields[4])
+        if mount.startswith(prefix):
+            found.add(mount)
+    return found
+
+
 def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict[str, Set[str]]]:
     """Scan *all* files, not only old ones, to protect mixed active chains.
 
@@ -259,6 +317,9 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
     hazards: Dict[str, Set[str]] = defaultdict(set)
     auxiliary: Dict[str, Set[str]] = defaultdict(set)
     root_dev = root.stat().st_dev
+    # st_dev alone cannot detect Linux bind mounts on the same XFS volume.
+    # Skip mounted child trees and make all destructive runs refuse them.
+    nested_mounts = nested_mount_points(root)
 
     def walk_error(err: OSError) -> None:
         raise Refuse("Repository scan incomplete: " + str(err))
@@ -273,7 +334,9 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
         for name in dirs:
             child = folder / name
             st = child.lstat()
-            if stat.S_ISLNK(st.st_mode):
+            if str(child) in nested_mounts:
+                hazards[directory].add("foreign-mount:" + name)
+            elif stat.S_ISLNK(st.st_mode):
                 hazards[directory].add("symlink-directory:" + name)
             elif st.st_dev != root_dev:
                 hazards[directory].add("foreign-mount:" + name)
@@ -318,19 +381,34 @@ def snapshot(root: Path) -> Tuple[Dict[str, FileInfo], Dict[str, Set[str]], Dict
     return files, hazards, auxiliary
 
 
+def malformed_machine_identity(file: FileInfo) -> bool:
+    """Conservatively recognize machine-ID-shaped but unsupported file names.
+
+    Old unknown backups are intentionally reportable/removable in an all-old
+    directory, but an invalid V12/V13 identity can hide a dependency. It is
+    not safe to treat that specific unrecognized form as an abandoned file.
+    """
+    if file.kind not in {"vbk", "vib", "vrb"}:
+        return False
+    stem = Path(file.name).stem
+    fallback = VM_PATTERN_NAME_ONLY.fullmatch(stem)
+    return bool(fallback and MACHINE_ID_LOOKALIKE.search(fallback.group("workload"))
+                and backup_filename_match(stem) is None)
+
+
 def pattern_workload(file: FileInfo) -> Optional[str]:
     stem = Path(file.name).stem
     if file.kind in {"vbk", "vib", "vrb"}:
-        match = VM_PATTERN.fullmatch(stem)
+        match = backup_filename_match(stem)
     else:
-        match = VBM_PATTERN.fullmatch(stem)
+        match = VBM_PATTERN.fullmatch(stem) or VBM_PER_MACHINE.fullmatch(stem)
     return match.group("workload").casefold() if match else None
 
 
 def timestamp_from_name(file: FileInfo) -> Optional[int]:
     if file.kind not in {"vbk", "vib", "vrb"}:
         return None
-    match = VM_PATTERN.fullmatch(Path(file.name).stem)
+    match = backup_filename_match(Path(file.name).stem)
     if not match:
         return None
     try:
@@ -344,7 +422,8 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
     """Get storage names referenced by VBM XML without interpreting VBR job settings.
 
     FilePath is a Veeam Storage element field. Windows paths are accepted;
-    only the basename can be matched to local files in the VBM's directory.
+    basename references are resolved against repository-wide candidates by
+    build_groups, which blocks duplicates and unresolved relationships.
     """
     try:
         size = path.stat().st_size
@@ -365,18 +444,52 @@ def metadata_refs(path: Path) -> Tuple[Set[str], Optional[str]]:
         if root.tag.rsplit("}", 1)[-1].lower() != "backupmeta":
             return set(), "VBM-unexpected-root"
         result: Set[str] = set()
+        def payload_looking(value: str) -> bool:
+            # An unfamiliar attribute may encode another storage dependency;
+            # ignoring it can incorrectly authorize a destructive unlink.
+            return Path(ntpath.basename(value.replace("/", "\\"))).suffix.lower() in PAYLOAD_EXTS
+
+        # Children explicitly parsed as Storage.FilePath/FileName are not
+        # unknown schema elements. Other path-bearing elements remain unsafe.
+        understood_children = {id(child) for parent in root.iter()
+                               if parent.tag.rsplit("}", 1)[-1].lower() == "storage"
+                               for child in parent
+                               if child.tag.rsplit("}", 1)[-1].lower()
+                               in ("filepath", "filename")}
         for element in root.iter():
-            if element.tag.rsplit("}", 1)[-1].lower() != "storage":
+            local_tag = element.tag.rsplit("}", 1)[-1].lower()
+            if local_tag != "storage":
+                if id(element) in understood_children:
+                    if any(payload_looking(value) for value in element.attrib.values()):
+                        return set(), "VBM-unrecognized-storage-schema"
+                    continue
+                # An unfamiliar XML element may contain a backup file path.
+                # It is NOT evidence of an empty dependency map. Holding such
+                # metadata is safer than treating an unknown V13 schema as old.
+                possible_values = list(element.attrib.values())
+                if element.text:
+                    possible_values.append(element.text.strip())
+                if any(payload_looking(value) for value in possible_values if value):
+                    return set(), "VBM-unrecognized-storage-schema"
                 continue
+            if any(payload_looking(value) for key, value in element.attrib.items()
+                   if key.rsplit("}", 1)[-1].lower() not in ("filepath", "filename")):
+                return set(), "VBM-unrecognized-storage-schema"
+            if element.text and payload_looking(element.text.strip()):
+                return set(), "VBM-unrecognized-storage-schema"
             values = [value for key, value in element.attrib.items()
                       if key.rsplit("}", 1)[-1].lower() in ("filepath", "filename")]
             values.extend((child.text or "").strip() for child in element
                           if child.tag.rsplit("}", 1)[-1].lower() in ("filepath", "filename"))
+            if not any(values):
+                return set(), "VBM-unrecognized-storage-schema"
             for value in values:
-                if value:
-                    base = ntpath.basename(value.replace("/", "\\"))
-                    if Path(base).suffix.lower() in PAYLOAD_EXTS:
-                        result.add(base.casefold())
+                if not value:
+                    return set(), "VBM-empty-storage-filename"
+                base = ntpath.basename(value.replace("/", "\\"))
+                if Path(base).suffix.lower() not in PAYLOAD_EXTS:
+                    return set(), "VBM-unsupported-storage-reference"
+                result.add(base.casefold())
         return result, None
     except (OSError, ET.ParseError, ValueError, UnicodeError) as exc:
         return set(), "VBM-unreadable:" + type(exc).__name__
@@ -395,16 +508,22 @@ def get_immutable(root: Path, rel: str) -> bool:
 
 
 def payload_parts(file: FileInfo) -> Optional[Tuple[str, str, int]]:
-    """Return (workload, VM identifier, timestamp_ns) for known Veeam v12 names."""
+    """Return (workload, VM identifier, timestamp_ns) for known V12/V13 names."""
     if file.kind not in {"vbk", "vib", "vrb"}:
         return None
-    match = VM_PATTERN.fullmatch(Path(file.name).stem)
+    match = backup_filename_match(Path(file.name).stem)
     if match is None:
         return None
     created = timestamp_from_name(file)
     if created is None:
         return None
-    return match.group("workload").casefold(), match.group("vmid").casefold(), created
+    vmid = (match.groupdict().get("vmid") or NO_MACHINE_ID).casefold()
+    # Legacy names capture the identifier without the 'vm-' prefix; the
+    # explicit-D profile includes it. Normalize both so a V12 full and a V13
+    # incremental cannot be mistaken for unrelated chains after an upgrade.
+    if vmid.startswith("vm-"):
+        vmid = vmid[3:]
+    return match.group("workload").casefold(), vmid, created
 
 
 def build_groups(root: Path, files: Dict[str, FileInfo],
@@ -441,6 +560,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             else:
                 unknown_payloads.append(rel)
         duplicate_names = [base for base, paths in by_basename.items() if len(paths) != 1]
+        invalid_id_layout = any(malformed_machine_identity(files[p]) for p in unknown_payloads)
         # An unrecognized payload could be required by any recognized chain;
         # refusing mixed-age ambiguity avoids deleting an unseen dependency.
         folder_mixed = (any(files[p].mtime_ns >= cutoff_ns for p in members) or
@@ -573,6 +693,10 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             if generic_ambiguity:
                 reasons.append("mixed-age-unrecognized-files-or-unmapped-metadata" if not duplicate_names
                                else "duplicate-case-insensitive-filenames")
+            if invalid_id_layout:
+                # Malformed machine identities can hide a newer incremental's
+                # parent. Hold every chain in this folder, even if all are old.
+                reasons.append("invalid-machine-id-filename")
             if any(files[p].nlink != 1 for p in group.files):
                 reasons.append("hardlinks-present")
             if group.group_type == "UNCLASSIFIED" and folder_mixed:
@@ -636,7 +760,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             blockers = [r for r in reasons if r.startswith((
                 "unsafe-entries:", "mixed-age-unrecognized", "duplicate-case", "hardlinks-present",
                 "unclassified-file-in-mixed", "ambiguous-same", "recent-unbased",
-                "unsupported-reverse-incremental-layout",
+                "unsupported-reverse-incremental-layout", "invalid-machine-id-filename",
                 "unreadable-associated", "incomplete-active-vbm", "recent-associated"))]
             contains_recent = any(r.startswith("contains-recent") for r in reasons)
             if blockers:
@@ -651,7 +775,7 @@ def build_groups(root: Path, files: Dict[str, FileInfo],
             reasons = [x for x in group.reason.split("; ") if x]
             if directory_hazards:
                 reasons.append("unsafe-entries:" + ",".join(sorted(directory_hazards)))
-            if generic_ambiguity:
+            if generic_ambiguity or invalid_id_layout:
                 reasons.append("unmapped-or-ambiguous-directory")
             if files[meta_rel].nlink != 1:
                 reasons.append("hardlinks-present")
@@ -1196,6 +1320,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
         # Direct callers still receive marker-change protection. Production
         # callers use the already verified second snapshot for this baseline.
         auxiliary = snapshot(root)[2]
+    if nested_mount_points(root):
+        raise Refuse("Nested mounts detected in repository; purge refused")
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     failures, deleted = 0, 0
     outcomes: Dict[str, str] = {}
@@ -1213,6 +1339,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
                                key=lambda r: {"vib": 0, "vrb": 0, "vbk": 1, "vbm": 2}[files[r].kind])
                 fd = None
                 try:
+                    if nested_mount_points(root):
+                        raise Refuse("New nested mount detected before purge group")
                     fd = open_safe_dir(root_fd, group.directory)
                     # Never delete a VBM if any payload it references still
                     # exists, including a blocked or partially deleted chain.
@@ -1246,6 +1374,8 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
                     # without changing its parent directory timestamps.
                     assert_all_payload_files_unchanged(root_fd, by_directory, outcomes)
                     for rel in paths:
+                        if nested_mount_points(root):
+                            raise Refuse("Nested mount appeared during purge")
                         assert_no_new_backup_activity(root_fd, group.directory,
                                                       by_directory[group.directory],
                                                       outcomes, auxiliary, by_directory)
@@ -1298,7 +1428,7 @@ def purge(root: Path, groups: List[Group], files: Dict[str, FileInfo],
 def interactive_mode() -> str:
     if not sys.stdin.isatty():
         raise Refuse("Noninteractive launch requires --dry-run or --purge")
-    print("\nVeeam v12 Backup Copy XFS Cleanup")
+    print("\nVeeam v12 / v13 Backup Copy XFS Cleanup")
     print("  1) Dry scan (read-only, reports only)")
     print("  2) Scan and purge expired backup chains")
     print("  3) Exit")
@@ -1315,7 +1445,7 @@ def interactive_mode() -> str:
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", action="version", version="veeam-xfs-cleanup 0.4.3")
+    parser.add_argument("--version", action="version", version="veeam-xfs-cleanup 0.5.0")
     parser.add_argument("--repo", type=Path,
                         help="Backup copy repository root (prompted if on a terminal)")
     parser.add_argument("--days", type=int, default=28,

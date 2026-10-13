@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.5.0 - GitHub source release (2026-10-13)
+
+- Release owner manually reviewed and approved public GitHub publication.
+- Promote the **unchanged** tested rc3 Python cleanup code to the v0.5.0 source release.
+- Preserve the full, previously verified 146-test regression suite in the engineering validation archive; include focused permanent regressions with the GitHub source.
+- Preserve the existing audit, immutable-file protection, manual idle-window restriction and 28-day default.
+- Actual Veeam v13 VBM and mounted hardened-XFS destructive behavior remain outside independently verified test coverage. Publication does not certify unattended v13 purge.
+
+## 0.5.0-rc3 - Final adversarial debug and metadata hardening (2026-10-13)
+
+- Fix VBM parsing of unknown Storage attribute values that reference backup payloads, even when a known FilePath also exists. Unknown path-bearing child attributes also fail closed; legitimate numeric and non-path attributes remain accepted.
+- Refuse malformed machine-ID-like backup filenames instead of accepting them as ordinary name-only backup chains. Block every chain in the affected directory, even when all files are old, to avoid severing an unidentified dependency.
+- Restrict GUID-like terminal identifiers to the accepted eight-character abbreviated form and twelve-character full form; reject unsupported intermediate lengths.
+- Add permanent regression cases for every reproduced defect, positive compatibility controls, and 600 seeded mixed-version dependency scenarios.
+- Keep all existing v12/v13 CLI modes, 28-day default, journaling, mount safety, and XFS immutability protections unchanged.
+- Retain the v13 production gate: synthetic metadata is not proof of native v13/XFS safe deletion.
+
+## 0.5.0-rc2 - Full debug and rubber-duck remediation (2026-10-13)
+
+- Added name-only `WorkloadDYYYY-MM-DDTHHMMSS` backup file recognition documented by Veeam; retained v12 and v13 machine-ID formats and guarded malformed ID fallbacks.
+- Fixed the VBM XML parser treating non-Storage backup file references as an empty map; unfamiliar path-bearing layouts now fail closed.
+- Preserved correct `<Storage><FilePath>` parsing while applying that broader unknown-schema guard.
+- Added `/proc/self/mountinfo` nested-mount detection to reject same-filesystem bind mounts that device-ID checks miss, including before each deletion.
+- Re-ran 134 automated regressions, 300 additional randomized legacy/modern workload identities, Python 3.8 syntax parsing, and a non-root execution sweep.
+- Only synthetic Veeam v13 metadata and disposable Linux filesystem operations were used; vendor v13 native data and mounted XFS acceptance remain unverified.
+
+## 0.5.0 - Dual-version development candidate (2026-10-13)
+
+- Preserve the v0.4.3 Linux/XFS purge safeguards, interactive menu, unattended mode, reports, audit journal, and 28-day default.
+- Support recognized v12 legacy VM-ID filenames alongside newer D-separated per-machine backup files, including short VM IDs and GUID-form identities used by Veeam backups.
+- Normalize machine IDs across legacy and modern names so an upgraded repository does not split a full and dependent incremental into unrelated chains.
+- Recognize per-machine VBM filenames and fail closed on unrecognized Storage XML elements or unsupported references.
+- Add mixed-version, upgraded-chain, VBM, GUID, malformed-format, CLI dry scan, and synthetic purge regressions.
+- Confirm that Software/Infrastructure Appliance deployments are outside the supported automated-root-purge scope.
+- Native Veeam v13 metadata and mounted hardened-XFS production deletion are not yet independently proven; these remain validation limits, not claims of certification.
+
 ## 0.4.3 — Final customer release (2026-10-13)
 
 - Promoted the v0.4.3-rc1 candidate following release-owner-reported manual testing and the completed offline validation.
